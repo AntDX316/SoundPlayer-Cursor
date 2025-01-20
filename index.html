@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sound Player</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar">
+            <h1><span class="material-icons">equalizer</span> Sound Player</h1>
+            <div class="folders-section">
+                <h2>Folders</h2>
+                <div id="folders"></div>
+                <button id="newFolderBtn" class="new-folder-btn">
+                    <span class="material-icons">create_new_folder</span>
+                    NEW FOLDER
+                </button>
+            </div>
+            <div class="action-buttons">
+                <button id="saveStateBtn" class="action-btn">
+                    <span class="material-icons">save</span>
+                    SAVE
+                </button>
+                <button id="loadStateBtn" class="action-btn">
+                    <span class="material-icons">folder_open</span>
+                    LOAD
+                </button>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="header">
+                <h2 id="currentFolderName">All Files</h2>
+                <button id="fileUpload" class="upload-btn">
+                    <span class="material-icons">upload</span>
+                    UPLOAD SOUND FILES
+                </button>
+            </div>
+            <div id="filesGrid" class="files-grid"></div>
+            <div class="player-section">
+                <canvas id="visualizer"></canvas>
+                <div class="player-controls">
+                    <div class="track-info">
+                        <span id="currentTrack">No track selected</span>
+                        <div class="time-info">
+                            <span id="currentTime">0:00</span>
+                            <span>/</span>
+                            <span id="duration">0:00</span>
+                        </div>
+                    </div>
+                    <div class="seek-bar">
+                        <input type="range" id="seekBar" min="0" max="100" value="0">
+                    </div>
+                    <div class="controls">
+                        <button id="prevBtn" class="control-btn">
+                            <span class="material-icons">skip_previous</span>
+                        </button>
+                        <button id="playBtn" class="control-btn play-btn">
+                            <span class="material-icons">play_arrow</span>
+                        </button>
+                        <button id="nextBtn" class="control-btn">
+                            <span class="material-icons">skip_next</span>
+                        </button>
+                        <button id="shuffleBtn" class="control-btn" title="Shuffle">
+                            <span class="material-icons">shuffle</span>
+                        </button>
+                        <button id="repeatOneBtn" class="control-btn" title="Repeat One">
+                            <span class="material-icons">repeat_one</span>
+                        </button>
+                        <div class="volume-control">
+                            <span class="material-icons">volume_up</span>
+                            <input type="range" id="volumeSlider" min="0" max="100" value="100">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Electron integration
+        const { ipcRenderer } = require('electron');
+        const path = require('path');
+        window.electron = {
+            saveFile: (filePath, data) => ipcRenderer.invoke('save-file', filePath, data),
+            loadFile: (filePath) => ipcRenderer.invoke('load-file', filePath),
+            showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
+            showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
+            path: path
+        };
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html> 

@@ -1,0 +1,72 @@
+{
+  "name": "soundplayer",
+  "version": "1.0.0",
+  "description": "A modern sound player with spectrum analyzer and library management",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder build",
+    "build:win": "electron-builder build --win nsis",
+    "build:mac": "electron-builder build --mac",
+    "build:linux": "electron-builder build --linux",
+    "build:all": "electron-builder build -wl"
+  },
+  "build": {
+    "appId": "com.soundplayer.app",
+    "productName": "Sound Player",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "artifactName": "SoundPlayer.exe"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": true,
+      "createDesktopShortcut": false,
+      "packElevateHelper": false,
+      "createStartMenuShortcut": false,
+      "installerIcon": null,
+      "uninstallerIcon": null,
+      "differentialPackage": false,
+      "unicode": true,
+      "include": "installer.nsh"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "styles.css",
+      "app.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/ffmpeg-static/ffmpeg.exe",
+        "to": "ffmpeg.exe"
+      }
+    ],
+    "asar": true,
+    "compression": "maximum"
+  },
+  "keywords": [
+    "audio",
+    "player",
+    "music",
+    "spectrum",
+    "electron"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "ffmpeg-static": "^5.2.0"
+  },
+  "devDependencies": {
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1"
+  }
+}
