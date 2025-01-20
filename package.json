@@ -19,7 +19,8 @@
     },
     "win": {
       "target": "nsis",
-      "artifactName": "SoundPlayer.exe"
+      "artifactName": "SoundPlayer.exe",
+      "icon": null
     },
     "nsis": {
       "oneClick": true,
@@ -30,11 +31,8 @@
       "createDesktopShortcut": false,
       "packElevateHelper": false,
       "createStartMenuShortcut": false,
-      "installerIcon": null,
-      "uninstallerIcon": null,
       "differentialPackage": false,
-      "unicode": true,
-      "include": "installer.nsh"
+      "unicode": true
     },
     "files": [
       "main.js",
