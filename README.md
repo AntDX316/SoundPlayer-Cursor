@@ -79,8 +79,11 @@ npm run build
 
 4. **Organize Music**
    - Create folders using the "NEW FOLDER" button
-   - Drag and drop files between folders
+   - Folders are automatically saved and persist between sessions (even empty folders)
+   - Rename folders by clicking the edit icon next to the folder name
+   - Delete folders using the delete icon (files will be moved to "All Files")
    - Use the "All Files" view to see everything
+   - Click any folder to switch between different collections
 
 5. **Playback Controls**
    - Play/Pause: Space bar or click play button

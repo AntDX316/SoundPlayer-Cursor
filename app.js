@@ -187,6 +187,12 @@ class SoundPlayer {
                 this.updateFoldersList();
                 this.updateFilesList();
                 
+                // Update folder name in header
+                const currentFolderElement = document.getElementById('currentFolderName');
+                if (currentFolderElement && this.folders.has(this.currentFolder)) {
+                    currentFolderElement.textContent = this.folders.get(this.currentFolder).name;
+                }
+                
                 // Update controls state
                 document.getElementById('shuffleBtn').classList.toggle('active', this.isShuffleOn);
                 document.getElementById('repeatOneBtn').classList.toggle('active', this.isRepeatOneOn);
@@ -443,6 +449,10 @@ class SoundPlayer {
         const foldersContainer = document.getElementById('folders');
         foldersContainer.innerHTML = '';
 
+        // Remove any existing event listeners
+        const newContainer = foldersContainer.cloneNode(false);
+        foldersContainer.parentNode.replaceChild(newContainer, foldersContainer);
+
         this.folders.forEach((folder, folderId) => {
             const folderElement = document.createElement('div');
             folderElement.className = `folder-item ${this.currentFolder === folderId ? 'active' : ''}`;
@@ -465,28 +475,35 @@ class SoundPlayer {
                 ` : ''}
             `;
 
-            // Add click handler for folder selection
-            folderElement.querySelector('.folder-name').addEventListener('click', (e) => {
-                e.preventDefault();
-                this.switchFolder(folderId);
-            });
+            newContainer.appendChild(folderElement);
+        });
 
-            // Add handlers for folder controls if not "all" folder
-            if (folderId !== 'all') {
-                const renameBtn = folderElement.querySelector('.folder-btn.rename');
-                renameBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.renameFolder(folderId);
-                });
+        // Use event delegation for all folder interactions
+        newContainer.addEventListener('click', (e) => {
+            const folderItem = e.target.closest('.folder-item');
+            if (!folderItem) return;
 
-                const deleteBtn = folderElement.querySelector('.folder-btn.delete');
-                deleteBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.deleteFolder(folderId);
-                });
+            const folderId = folderItem.dataset.folderId;
+            
+            // Handle folder control buttons
+            if (e.target.closest('.folder-btn.rename')) {
+                e.stopPropagation();
+                this.renameFolder(folderId);
+                return;
             }
-
-            foldersContainer.appendChild(folderElement);
+            
+            if (e.target.closest('.folder-btn.delete')) {
+                e.stopPropagation();
+                this.deleteFolder(folderId);
+                return;
+            }
+            
+            // Handle folder selection (only if not clicking on controls)
+            if (!e.target.closest('.folder-controls')) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.switchFolder(folderId);
+            }
         });
     }
 
@@ -904,6 +921,7 @@ class SoundPlayer {
             console.log('Current folders:', this.folders);
             this.updateFoldersList();
             this.switchFolder(folderId);
+            this.saveState();
         }
     }
 
@@ -918,6 +936,7 @@ class SoundPlayer {
             if (this.currentFolder === folderId) {
                 document.getElementById('currentFolderName').textContent = folder.name;
             }
+            this.saveState();
         }
     }
 
@@ -942,6 +961,7 @@ class SoundPlayer {
             } else {
                 this.updateFoldersList();
             }
+            this.saveState();
         }
     }
 
@@ -955,6 +975,8 @@ class SoundPlayer {
             // Update folder active states without recreating the entire list
             this.updateFolderActiveStates();
             this.updateFilesList();
+            // Save the current folder selection
+            this.saveState();
         }
     }
 
