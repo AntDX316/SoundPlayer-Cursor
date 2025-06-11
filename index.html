@@ -31,10 +31,19 @@
         <div class="main-content">
             <div class="header">
                 <h2 id="currentFolderName">All Files</h2>
-                <button id="fileUpload" class="upload-btn">
-                    <span class="material-icons">upload</span>
-                    UPLOAD SOUND FILES
-                </button>
+                <div class="header-controls">
+                    <div class="search-container">
+                        <span class="material-icons search-icon">search</span>
+                        <input type="text" id="searchInput" placeholder="Search files..." class="search-input">
+                        <button id="clearSearch" class="clear-search-btn" style="display: none;">
+                            <span class="material-icons">clear</span>
+                        </button>
+                    </div>
+                    <button id="fileUpload" class="upload-btn">
+                        <span class="material-icons">upload</span>
+                        UPLOAD SOUND FILES
+                    </button>
+                </div>
             </div>
             <div id="filesGrid" class="files-grid"></div>
             <div class="player-section">

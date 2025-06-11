@@ -13,6 +13,8 @@ class SoundPlayer {
         this.isRepeatOneOn = false;
         this.db = null;
         this.selectedFiles = new Set();
+        this.searchQuery = '';
+        this.filteredFiles = new Set();
         
         this.initDB().then(() => {
             this.createDefaultFolder();
@@ -343,6 +345,22 @@ class SoundPlayer {
             loadStateBtn.addEventListener('click', () => this.loadFromFile());
         }
 
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    this.clearSearch();
+                }
+            });
+        }
+
+        const clearSearchBtn = document.getElementById('clearSearch');
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', () => this.clearSearch());
+        }
+
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 's') {
@@ -351,10 +369,55 @@ class SoundPlayer {
             } else if (e.ctrlKey && e.key === 'o') {
                 e.preventDefault();
                 this.loadFromFile();
+            } else if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput) {
+                    searchInput.focus();
+                }
             }
         });
 
         console.log('Event listeners setup complete');
+    }
+
+    handleSearch(query) {
+        this.searchQuery = query.toLowerCase().trim();
+        const clearSearchBtn = document.getElementById('clearSearch');
+        
+        if (this.searchQuery) {
+            clearSearchBtn.style.display = 'flex';
+            this.filterFiles();
+        } else {
+            clearSearchBtn.style.display = 'none';
+            this.filteredFiles.clear();
+        }
+        
+        this.updateFilesList();
+    }
+
+    filterFiles() {
+        this.filteredFiles.clear();
+        const folderFiles = this.folders.get(this.currentFolder).files;
+        
+        folderFiles.forEach(fileId => {
+            const file = this.files.get(fileId);
+            if (file && file.name.toLowerCase().includes(this.searchQuery)) {
+                this.filteredFiles.add(fileId);
+            }
+        });
+    }
+
+    clearSearch() {
+        const searchInput = document.getElementById('searchInput');
+        const clearSearchBtn = document.getElementById('clearSearch');
+        
+        searchInput.value = '';
+        this.searchQuery = '';
+        this.filteredFiles.clear();
+        clearSearchBtn.style.display = 'none';
+        
+        this.updateFilesList();
     }
 
     createDefaultFolder() {
@@ -480,8 +543,30 @@ class SoundPlayer {
         toolbar.appendChild(selectionTools);
         filesGrid.appendChild(toolbar);
 
+        // Use filtered files if search is active, otherwise use all folder files
         const folderFiles = this.folders.get(this.currentFolder).files;
-        folderFiles.forEach(fileId => {
+        const filesToShow = this.searchQuery ? this.filteredFiles : folderFiles;
+        
+        // Show search results info
+        if (this.searchQuery) {
+            const searchInfo = document.createElement('div');
+            searchInfo.style.cssText = `
+                padding: 12px 16px;
+                background: rgba(139, 92, 246, 0.1);
+                border: 1px solid rgba(139, 92, 246, 0.3);
+                border-radius: 8px;
+                margin: 8px;
+                color: #a0a0a0;
+                font-size: 14px;
+            `;
+            searchInfo.innerHTML = `
+                <span class="material-icons" style="vertical-align: middle; margin-right: 8px; font-size: 18px;">search</span>
+                Found ${filesToShow.size} result${filesToShow.size !== 1 ? 's' : ''} for "${this.searchQuery}"
+            `;
+            filesGrid.appendChild(searchInfo);
+        }
+
+        filesToShow.forEach(fileId => {
             const file = this.files.get(fileId);
             if (!file) return;
 
@@ -818,6 +903,8 @@ class SoundPlayer {
         const folder = this.folders.get(folderId);
         if (folder) {
             document.getElementById('currentFolderName').textContent = folder.name;
+            // Clear search when switching folders
+            this.clearSearch();
             this.updateFoldersList();
             this.updateFilesList();
         }

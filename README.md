@@ -17,6 +17,7 @@ Whether you're organizing your library, creating custom playlists, or just enjoy
 ## ✨ Features
 
 - 🎵 Audio playback with spectrum visualization
+- 🔍 **Real-time search** - Find your music instantly as you type
 - 📁 Folder organization for your music
 - 📋 Playlist management with shuffle and repeat
 - 🎨 Modern dark theme interface
@@ -70,28 +71,34 @@ npm run build
    - Select one or more audio files
    - Files will be added to your library
 
-3. **Organize Music**
+3. **Search Your Music**
+   - Use the search bar at the top to find files instantly
+   - Search is case-insensitive and searches file names
+   - Click the "×" button or press Escape to clear search
+   - Use `Ctrl+F` to quickly focus the search bar
+
+4. **Organize Music**
    - Create folders using the "NEW FOLDER" button
    - Drag and drop files between folders
    - Use the "All Files" view to see everything
 
-4. **Playback Controls**
+5. **Playback Controls**
    - Play/Pause: Space bar or click play button
    - Next/Previous: Arrow buttons or keyboard arrows
    - Volume: Slider in bottom right
    - Seek: Progress bar below visualization
 
-5. **Playlist Features**
+6. **Playlist Features**
    - Shuffle: Toggle shuffle mode
    - Repeat: Toggle repeat one/all
    - Click tracks to play them
 
-6. **Save/Load Library**
+7. **Save/Load Library**
    - Save: Click SAVE button to store your library organization
    - Load: Click LOAD button to restore a previously saved library
    - Note: The library saves file references, not the actual audio files
 
-7. **Application Menu**
+8. **Application Menu**
    - **File Menu**: Access application controls and exit options
    - **Help Menu**: View application information and credits
    - **About Dialog**: Shows version, creator info, and application details
@@ -102,6 +109,8 @@ npm run build
 - `→` - Next track
 - `←` - Previous track
 - `Delete` - Delete selected track
+- `Ctrl+F` - Focus search bar
+- `Escape` - Clear search (when search bar is focused)
 - `Ctrl+Q` / `Cmd+Q` - Exit application
 
 ## 🔧 Troubleshooting
