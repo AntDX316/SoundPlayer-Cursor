@@ -138,7 +138,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 👨‍💻 Author
 
-Created by **@AntDX316**
+Created by **[@AntDX316](https://twitter.com/AntDX316)**
 
 ## 📄 License
 

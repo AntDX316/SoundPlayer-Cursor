@@ -80,7 +80,7 @@ function showAboutDialog() {
         type: 'info',
         title: 'About Sound Player',
         message: 'Sound Player',
-        detail: `Version: 1.0.0\n\nA modern audio player with spectrum visualization and library management.\n\nCreated by @AntDX316\n\nBuilt with Electron and Web Technologies\n\n© 2024 Sound Player`,
+        detail: `Version: 1.0.0\n\nA modern audio player with spectrum visualization and library management.\n\nCreated by @AntDX316\nTwitter/X: https://x.com/AntDX316\n\nBuilt with Electron and Web Technologies\n\n© 2024 Sound Player`,
         buttons: ['OK'],
         defaultId: 0
     });
