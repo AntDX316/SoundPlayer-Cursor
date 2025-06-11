@@ -16,6 +16,7 @@ class SoundPlayer {
         this.searchQuery = '';
         this.filteredFiles = new Set();
         this.isSeeking = false;
+        this.isAutoScrollOn = true; // Auto-scroll enabled by default
         
         this.initDB().then(() => {
             this.createDefaultFolder();
@@ -114,7 +115,8 @@ class SoundPlayer {
             currentFolder: this.currentFolder,
             currentTrack: this.currentTrack,
             isShuffleOn: this.isShuffleOn,
-            isRepeatOneOn: this.isRepeatOneOn
+            isRepeatOneOn: this.isRepeatOneOn,
+            isAutoScrollOn: this.isAutoScrollOn
         };
 
         const transaction = this.db.transaction(['state'], 'readwrite');
@@ -182,6 +184,7 @@ class SoundPlayer {
                 this.currentTrack = state.currentTrack || null;
                 this.isShuffleOn = state.isShuffleOn || false;
                 this.isRepeatOneOn = state.isRepeatOneOn || false;
+                this.isAutoScrollOn = state.isAutoScrollOn !== undefined ? state.isAutoScrollOn : true;
 
                 // Update UI
                 this.updateFoldersList();
@@ -196,6 +199,10 @@ class SoundPlayer {
                 // Update controls state
                 document.getElementById('shuffleBtn').classList.toggle('active', this.isShuffleOn);
                 document.getElementById('repeatOneBtn').classList.toggle('active', this.isRepeatOneOn);
+                const autoScrollBtn = document.getElementById('autoScrollBtn');
+                if (autoScrollBtn) {
+                    autoScrollBtn.classList.toggle('active', this.isAutoScrollOn);
+                }
 
                 // If there was a track playing, restore it
                 if (this.currentTrack) {
@@ -347,6 +354,11 @@ class SoundPlayer {
         const repeatOneBtn = document.getElementById('repeatOneBtn');
         if (repeatOneBtn) {
             repeatOneBtn.addEventListener('click', () => this.toggleRepeatOne());
+        }
+
+        const autoScrollBtn = document.getElementById('autoScrollBtn');
+        if (autoScrollBtn) {
+            autoScrollBtn.addEventListener('click', () => this.toggleAutoScroll());
         }
 
         // Save/Load buttons
@@ -678,8 +690,20 @@ class SoundPlayer {
         this.currentTrack = fileId;
         this.audioElement.src = file.url;
         document.getElementById('currentTrack').textContent = file.name;
+        
+        // Update selection to match the currently playing track
+        this.selectedFiles.clear();
+        this.selectedFiles.add(fileId);
+        this.lastSelectedFile = fileId;
+        
         this.play();
         this.updateFilesList(); // Update to show which file is playing
+        
+        // Auto-scroll to the current track if enabled
+        if (this.isAutoScrollOn) {
+            // Use setTimeout to ensure the file list is updated first
+            setTimeout(() => this.scrollToCurrentTrack(), 100);
+        }
     }
 
     togglePlay() {
@@ -787,12 +811,54 @@ class SoundPlayer {
 
     toggleShuffle() {
         this.isShuffleOn = !this.isShuffleOn;
+        
+        // If shuffle is being turned on, turn off repeat
+        if (this.isShuffleOn && this.isRepeatOneOn) {
+            this.isRepeatOneOn = false;
+            document.getElementById('repeatOneBtn').classList.remove('active');
+        }
+        
         document.getElementById('shuffleBtn').classList.toggle('active', this.isShuffleOn);
+        this.saveState();
     }
 
     toggleRepeatOne() {
         this.isRepeatOneOn = !this.isRepeatOneOn;
+        
+        // If repeat is being turned on, turn off shuffle
+        if (this.isRepeatOneOn && this.isShuffleOn) {
+            this.isShuffleOn = false;
+            document.getElementById('shuffleBtn').classList.remove('active');
+        }
+        
         document.getElementById('repeatOneBtn').classList.toggle('active', this.isRepeatOneOn);
+        this.saveState();
+    }
+
+    toggleAutoScroll() {
+        this.isAutoScrollOn = !this.isAutoScrollOn;
+        document.getElementById('autoScrollBtn').classList.toggle('active', this.isAutoScrollOn);
+        this.saveState();
+        
+        // If auto-scroll is being turned on and there's a current track, scroll to it
+        if (this.isAutoScrollOn && this.currentTrack) {
+            this.scrollToCurrentTrack();
+        }
+    }
+
+    scrollToCurrentTrack() {
+        if (!this.currentTrack) return;
+        
+        const filesGrid = document.getElementById('filesGrid');
+        const currentTrackElement = filesGrid.querySelector(`[data-file-id="${this.currentTrack}"]`);
+        
+        if (currentTrackElement) {
+            currentTrackElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'nearest'
+            });
+        }
     }
 
     handleTrackEnd() {

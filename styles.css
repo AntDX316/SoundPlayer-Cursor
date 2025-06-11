@@ -482,6 +482,25 @@ body {
     color: var(--primary-color);
 }
 
+.auto-scroll-btn {
+    width: auto !important;
+    padding: 6px 12px !important;
+    border-radius: 16px !important;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.auto-scroll-btn .material-icons {
+    font-size: 16px;
+}
+
+.auto-scroll-btn .btn-text {
+    font-size: 11px;
+    letter-spacing: 0.5px;
+}
+
 .play-btn {
     border: 2px solid var(--primary-color);
     color: var(--primary-color);

@@ -20,6 +20,7 @@ Whether you're organizing your library, creating custom playlists, or just enjoy
 - 🔍 **Real-time search** - Find your music instantly as you type
 - 📁 Folder organization for your music
 - 📋 Playlist management with shuffle and repeat
+- 🎯 **Auto-scroll** - Automatically scroll to the currently playing track
 - 🎨 Modern dark theme interface
 - 💾 Save/Load library functionality
 - 🔊 Volume and seek controls
@@ -92,8 +93,9 @@ npm run build
    - Seek: Progress bar below visualization
 
 6. **Playlist Features**
-   - Shuffle: Toggle shuffle mode
-   - Repeat: Toggle repeat one/all
+   - Shuffle: Toggle shuffle mode (mutually exclusive with repeat)
+   - Repeat: Toggle repeat one/all (mutually exclusive with shuffle)
+   - Auto-scroll: Toggle automatic scrolling to the currently playing track (enabled by default)
    - Click tracks to play them
 
 7. **Save/Load Library**
