@@ -15,6 +15,7 @@ class SoundPlayer {
         this.selectedFiles = new Set();
         this.searchQuery = '';
         this.filteredFiles = new Set();
+        this.isSeeking = false;
         
         this.initDB().then(() => {
             this.createDefaultFolder();
@@ -316,6 +317,14 @@ class SoundPlayer {
         const seekBar = document.getElementById('seekBar');
         if (seekBar) {
             seekBar.addEventListener('input', (e) => this.seek(e.target.value));
+            seekBar.addEventListener('change', (e) => this.seek(e.target.value));
+            // Also handle mouse events for better responsiveness
+            seekBar.addEventListener('mousedown', () => {
+                this.isSeeking = true;
+            });
+            seekBar.addEventListener('mouseup', () => {
+                this.isSeeking = false;
+            });
         }
 
         // Audio element events
@@ -728,21 +737,40 @@ class SoundPlayer {
     }
 
     seek(value) {
+        if (!this.audioElement.duration || isNaN(this.audioElement.duration)) {
+            return; // Can't seek if no audio is loaded or duration is invalid
+        }
         const time = (value * this.audioElement.duration) / 100;
         this.audioElement.currentTime = time;
     }
 
     updateProgress() {
+        if (!this.audioElement.duration || isNaN(this.audioElement.duration)) {
+            return; // Can't update progress if no audio is loaded or duration is invalid
+        }
         const progress = (this.audioElement.currentTime / this.audioElement.duration) * 100;
-        document.getElementById('seekBar').value = progress;
-        document.getElementById('currentTime').textContent = this.formatTime(this.audioElement.currentTime);
+        const seekBar = document.getElementById('seekBar');
+        // Only update seek bar if user is not currently seeking
+        if (seekBar && !this.isSeeking) {
+            seekBar.value = progress || 0;
+        }
+        const currentTimeEl = document.getElementById('currentTime');
+        if (currentTimeEl) {
+            currentTimeEl.textContent = this.formatTime(this.audioElement.currentTime || 0);
+        }
     }
 
     updateDuration() {
-        document.getElementById('duration').textContent = this.formatTime(this.audioElement.duration);
+        const durationEl = document.getElementById('duration');
+        if (durationEl) {
+            durationEl.textContent = this.formatTime(this.audioElement.duration || 0);
+        }
     }
 
     formatTime(seconds) {
+        if (!seconds || isNaN(seconds)) {
+            return '0:00';
+        }
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = Math.floor(seconds % 60);
         return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
@@ -779,64 +807,97 @@ class SoundPlayer {
 
     showInputDialog(title, placeholder = '', initialValue = '') {
         return new Promise((resolve) => {
+            // Create backdrop
+            const backdrop = document.createElement('div');
+            backdrop.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+
+            // Create dialog
             const dialog = document.createElement('div');
             dialog.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(30, 30, 30, 0.95);
+                background: rgba(30, 30, 30, 0.98);
                 color: white;
                 padding: 24px;
                 border-radius: 8px;
-                z-index: 1000;
                 min-width: 300px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                max-width: 500px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+                border: 1px solid rgba(255, 255, 255, 0.1);
             `;
 
             dialog.innerHTML = `
-                <h3 style="margin-top: 0; margin-bottom: 16px;">${title}</h3>
+                <h3 style="margin-top: 0; margin-bottom: 16px; color: white;">${title}</h3>
                 <input type="text" value="${initialValue}" placeholder="${placeholder}"
-                    style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #444; 
-                    background: #222; color: white; margin-bottom: 16px;">
+                    style="width: 100%; padding: 12px; border-radius: 4px; border: 1px solid #444; 
+                    background: #222; color: white; margin-bottom: 16px; font-size: 14px;
+                    outline: none; box-sizing: border-box;">
                 <div style="display: flex; justify-content: flex-end; gap: 8px;">
                     <button class="cancel-btn" 
-                        style="padding: 8px 16px; border-radius: 4px; border: none; 
-                        background: #666; color: white; cursor: pointer;">Cancel</button>
+                        style="padding: 10px 20px; border-radius: 4px; border: none; 
+                        background: #666; color: white; cursor: pointer; font-size: 14px;">Cancel</button>
                     <button class="confirm-btn" 
-                        style="padding: 8px 16px; border-radius: 4px; border: none; 
-                        background: #2196f3; color: white; cursor: pointer;">OK</button>
+                        style="padding: 10px 20px; border-radius: 4px; border: none; 
+                        background: #2196f3; color: white; cursor: pointer; font-size: 14px;">OK</button>
                 </div>
             `;
 
+            backdrop.appendChild(dialog);
+
             const input = dialog.querySelector('input');
-            input.focus();
+            
+            const cleanup = () => {
+                if (backdrop.parentNode) {
+                    document.body.removeChild(backdrop);
+                }
+            };
 
             dialog.querySelector('.cancel-btn').addEventListener('click', () => {
-                document.body.removeChild(dialog);
+                cleanup();
                 resolve(null);
             });
 
             dialog.querySelector('.confirm-btn').addEventListener('click', () => {
                 const value = input.value.trim();
-                document.body.removeChild(dialog);
+                cleanup();
                 resolve(value || null);
             });
 
             input.addEventListener('keyup', (e) => {
                 if (e.key === 'Enter') {
                     const value = input.value.trim();
-                    document.body.removeChild(dialog);
+                    cleanup();
                     resolve(value || null);
                 } else if (e.key === 'Escape') {
-                    document.body.removeChild(dialog);
+                    cleanup();
                     resolve(null);
                 }
             });
 
-            document.body.appendChild(dialog);
-            input.focus();
-            input.select();
+            // Close on backdrop click
+            backdrop.addEventListener('click', (e) => {
+                if (e.target === backdrop) {
+                    cleanup();
+                    resolve(null);
+                }
+            });
+
+            document.body.appendChild(backdrop);
+            
+            // Focus the input after a short delay to ensure it's rendered
+            setTimeout(() => {
+                input.focus();
+                input.select();
+            }, 10);
         });
     }
 
