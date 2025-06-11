@@ -466,7 +466,8 @@ class SoundPlayer {
             `;
 
             // Add click handler for folder selection
-            folderElement.querySelector('.folder-name').addEventListener('click', () => {
+            folderElement.querySelector('.folder-name').addEventListener('click', (e) => {
+                e.preventDefault();
                 this.switchFolder(folderId);
             });
 
@@ -486,6 +487,20 @@ class SoundPlayer {
             }
 
             foldersContainer.appendChild(folderElement);
+        });
+    }
+
+    updateFolderActiveStates() {
+        const foldersContainer = document.getElementById('folders');
+        const folderElements = foldersContainer.querySelectorAll('.folder-item');
+        
+        folderElements.forEach(folderElement => {
+            const folderId = folderElement.dataset.folderId;
+            if (folderId === this.currentFolder) {
+                folderElement.classList.add('active');
+            } else {
+                folderElement.classList.remove('active');
+            }
         });
     }
 
@@ -937,7 +952,8 @@ class SoundPlayer {
             document.getElementById('currentFolderName').textContent = folder.name;
             // Clear search when switching folders
             this.clearSearch();
-            this.updateFoldersList();
+            // Update folder active states without recreating the entire list
+            this.updateFolderActiveStates();
             this.updateFilesList();
         }
     }
