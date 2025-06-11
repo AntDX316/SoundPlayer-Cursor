@@ -91,12 +91,18 @@ npm run build
    - Load: Click LOAD button to restore a previously saved library
    - Note: The library saves file references, not the actual audio files
 
+7. **Application Menu**
+   - **File Menu**: Access application controls and exit options
+   - **Help Menu**: View application information and credits
+   - **About Dialog**: Shows version, creator info, and application details
+
 ## ⌨️ Keyboard Shortcuts
 
 - `Space` - Play/Pause
 - `→` - Next track
 - `←` - Previous track
 - `Delete` - Delete selected track
+- `Ctrl+Q` / `Cmd+Q` - Exit application
 
 ## 🔧 Troubleshooting
 
@@ -115,6 +121,10 @@ npm run build
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 👨‍💻 Author
+
+Created by **@AntDX316**
 
 ## 📄 License
 
