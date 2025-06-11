@@ -451,6 +451,7 @@ class SoundPlayer {
 
         // Remove any existing event listeners
         const newContainer = foldersContainer.cloneNode(false);
+        newContainer.id = 'folders'; // Ensure the ID is preserved
         foldersContainer.parentNode.replaceChild(newContainer, foldersContainer);
 
         this.folders.forEach((folder, folderId) => {
@@ -485,15 +486,20 @@ class SoundPlayer {
 
             const folderId = folderItem.dataset.folderId;
             
-            // Handle folder control buttons
-            if (e.target.closest('.folder-btn.rename')) {
+            // Handle folder control buttons - check for both button and icon clicks
+            const renameBtn = e.target.closest('.folder-btn.rename');
+            const deleteBtn = e.target.closest('.folder-btn.delete');
+            
+            if (renameBtn) {
                 e.stopPropagation();
+                e.preventDefault();
                 this.renameFolder(folderId);
                 return;
             }
             
-            if (e.target.closest('.folder-btn.delete')) {
+            if (deleteBtn) {
                 e.stopPropagation();
+                e.preventDefault();
                 this.deleteFolder(folderId);
                 return;
             }
