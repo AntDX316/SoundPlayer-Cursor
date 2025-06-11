@@ -513,23 +513,7 @@ class SoundPlayer {
             align-items: center;
         `;
 
-        const deleteSelectedBtn = document.createElement('button');
-        deleteSelectedBtn.innerHTML = '<span class="material-icons">delete</span> Delete Selected';
-        deleteSelectedBtn.className = 'toolbar-btn';
-        deleteSelectedBtn.style.cssText = `
-            background: #ff4444;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 14px;
-            opacity: 0.7;
-            pointer-events: none;
-        `;
+
 
         const clearAllBtn = document.createElement('button');
         clearAllBtn.innerHTML = '<span class="material-icons">cleaning_services</span> Clear All';
@@ -547,7 +531,6 @@ class SoundPlayer {
             font-size: 14px;
         `;
 
-        selectionTools.appendChild(deleteSelectedBtn);
         selectionTools.appendChild(clearAllBtn);
         toolbar.appendChild(selectionTools);
         filesGrid.appendChild(toolbar);
@@ -631,8 +614,6 @@ class SoundPlayer {
                 }
 
                 this.lastSelectedFile = fileId;
-                deleteSelectedBtn.style.opacity = this.selectedFiles.size > 0 ? '1' : '0.7';
-                deleteSelectedBtn.style.pointerEvents = this.selectedFiles.size > 0 ? 'auto' : 'none';
             });
 
             // Add click handler for delete button
@@ -645,16 +626,6 @@ class SoundPlayer {
         });
 
         // Add handlers for toolbar buttons
-        deleteSelectedBtn.addEventListener('click', () => {
-            if (this.selectedFiles.size === 0) return;
-            
-            if (confirm(`Are you sure you want to delete ${this.selectedFiles.size} selected files?`)) {
-                this.selectedFiles.forEach(fileId => this.deleteFile(fileId));
-                this.selectedFiles.clear();
-                this.updateFilesList();
-            }
-        });
-
         clearAllBtn.addEventListener('click', () => {
             if (confirm('Are you sure you want to clear all files and folders? This cannot be undone.')) {
                 this.clearAll();

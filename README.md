@@ -108,7 +108,7 @@ npm run build
 - `Space` - Play/Pause
 - `→` - Next track
 - `←` - Previous track
-- `Delete` - Delete selected track
+- `Delete` - Delete individual track (using delete button on file card)
 - `Ctrl+F` - Focus search bar
 - `Escape` - Clear search (when search bar is focused)
 - `Ctrl+Q` / `Cmd+Q` - Exit application
