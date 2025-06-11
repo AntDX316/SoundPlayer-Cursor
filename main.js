@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
 
@@ -13,6 +13,77 @@ function createWindow() {
     });
 
     win.loadFile('index.html');
+    
+    // Create menu
+    createMenu();
+}
+
+function createMenu() {
+    const template = [
+        {
+            label: 'File',
+            submenu: [
+                {
+                    label: 'Exit',
+                    accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
+                    click: () => {
+                        app.quit();
+                    }
+                }
+            ]
+        },
+        {
+            label: 'Help',
+            submenu: [
+                {
+                    label: 'About Sound Player',
+                    click: () => {
+                        showAboutDialog();
+                    }
+                }
+            ]
+        }
+    ];
+
+    // macOS specific menu adjustments
+    if (process.platform === 'darwin') {
+        template.unshift({
+            label: app.getName(),
+            submenu: [
+                {
+                    label: 'About Sound Player',
+                    click: () => {
+                        showAboutDialog();
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: 'Quit',
+                    accelerator: 'Command+Q',
+                    click: () => {
+                        app.quit();
+                    }
+                }
+            ]
+        });
+        
+        // Remove About from Help menu on macOS since it's in the app menu
+        template[2].submenu = template[2].submenu.filter(item => item.label !== 'About Sound Player');
+    }
+
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
+}
+
+function showAboutDialog() {
+    dialog.showMessageBox({
+        type: 'info',
+        title: 'About Sound Player',
+        message: 'Sound Player',
+        detail: `Version: 1.0.0\n\nA modern audio player with spectrum visualization and library management.\n\nCreated by @AntDX316\n\nBuilt with Electron and Web Technologies\n\n© 2024 Sound Player`,
+        buttons: ['OK'],
+        defaultId: 0
+    });
 }
 
 app.whenReady().then(() => {
