@@ -39,6 +39,7 @@
       "index.html",
       "styles.css",
       "app.js",
+      "preload.js",
       "package.json"
     ],
     "extraResources": [
@@ -64,7 +65,7 @@
     "ffmpeg-static": "^5.2.0"
   },
   "devDependencies": {
-    "electron": "^28.1.0",
-    "electron-builder": "^24.9.1"
+    "electron": "^32.0.0",
+    "electron-builder": "^25.0.0"
   }
 }

@@ -17,6 +17,7 @@ class SoundPlayer {
         this.filteredFiles = new Set();
         this.isSeeking = false;
         this.isAutoScrollOn = true; // Auto-scroll enabled by default
+        this.activeObjectURLs = new Set(); // Track active blob URLs for cleanup
         
         this.initDB().then(() => {
             this.createDefaultFolder();
@@ -48,7 +49,99 @@ class SoundPlayer {
         });
     }
 
-    handleFileUpload(event) {
+    cleanupObjectURL(url) {
+        if (this.activeObjectURLs.has(url)) {
+            URL.revokeObjectURL(url);
+            this.activeObjectURLs.delete(url);
+        }
+    }
+
+    cleanupAllObjectURLs() {
+        this.activeObjectURLs.forEach(url => {
+            URL.revokeObjectURL(url);
+        });
+        this.activeObjectURLs.clear();
+    }
+
+    showNotification(message, type = 'info', duration = 3000) {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            z-index: 10000;
+            max-width: 300px;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease;
+        `;
+        
+        if (type === 'error') {
+            notification.style.backgroundColor = '#dc3545';
+            notification.style.color = 'white';
+        } else if (type === 'success') {
+            notification.style.backgroundColor = '#28a745';
+            notification.style.color = 'white';
+        } else {
+            notification.style.backgroundColor = '#007bff';
+            notification.style.color = 'white';
+        }
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 300);
+        }, duration);
+    }
+
+    showSimpleLoading(message) {
+        const dialog = document.createElement('div');
+        dialog.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(30, 30, 30, 0.95);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            z-index: 1000;
+            min-width: 200px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        `;
+
+        const messageEl = document.createElement('div');
+        messageEl.textContent = message;
+        messageEl.style.marginBottom = '15px';
+        dialog.appendChild(messageEl);
+
+        const spinner = document.createElement('div');
+        spinner.style.cssText = `
+            width: 20px;
+            height: 20px;
+            border: 2px solid #666;
+            border-top-color: #8b5cf6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        `;
+        dialog.appendChild(spinner);
+
+        document.body.appendChild(dialog);
+        return dialog;
+    }
+
+    async handleFileUpload(event) {
         const files = event.target.files;
         if (files.length === 0) return;
 
@@ -58,25 +151,75 @@ class SoundPlayer {
             this.currentFolder = 'all';
         }
 
+        // Show loading indicator for multiple files
+        let loadingDialog = null;
+        if (files.length > 1) {
+            loadingDialog = this.showSimpleLoading(`Processing ${files.length} files...`);
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+        
         Array.from(files).forEach(file => {
-            const fileId = Date.now() + '-' + file.name;
+            // Validate file type
+            if (!file.type.startsWith('audio/')) {
+                this.showNotification(`"${file.name}" is not a valid audio file`, 'error');
+                errorCount++;
+                return;
+            }
+
+            const fileId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
             const reader = new FileReader();
             
             reader.onload = (e) => {
-                // Store file in IndexedDB
-                const transaction = this.db.transaction(['files'], 'readwrite');
-                const store = transaction.objectStore('files');
-                store.put(e.target.result, fileId).onsuccess = () => {
-                    console.log(`File ${file.name} stored successfully`);
-                };
+                try {
+                    // Store file in IndexedDB
+                    const transaction = this.db.transaction(['files'], 'readwrite');
+                    const store = transaction.objectStore('files');
+                    
+                    store.put(e.target.result, fileId).onsuccess = () => {
+                        successCount++;
+                        if (successCount === 1 && errorCount === 0 && files.length === 1) {
+                            this.showNotification(`Added "${file.name}"`, 'success');
+                        } else if (successCount + errorCount === files.length) {
+                            // Close loading dialog
+                            if (loadingDialog && document.body.contains(loadingDialog)) {
+                                document.body.removeChild(loadingDialog);
+                            }
+                            this.showNotification(`Added ${successCount} files${errorCount > 0 ? `, ${errorCount} failed` : ''}`, successCount > errorCount ? 'success' : 'error');
+                        }
+                    };
+                    
+                    store.onerror = () => {
+                        errorCount++;
+                        if (successCount + errorCount === files.length) {
+                            // Close loading dialog
+                            if (loadingDialog && document.body.contains(loadingDialog)) {
+                                document.body.removeChild(loadingDialog);
+                            }
+                        }
+                        this.showNotification(`Failed to save "${file.name}"`, 'error');
+                    };
+                } catch (error) {
+                    errorCount++;
+                    this.showNotification(`Error processing "${file.name}": ${error.message}`, 'error');
+                }
+            };
+            
+            reader.onerror = () => {
+                errorCount++;
+                this.showNotification(`Failed to read "${file.name}"`, 'error');
             };
             
             reader.readAsArrayBuffer(file);
 
+            const objectURL = URL.createObjectURL(file);
+            this.activeObjectURLs.add(objectURL);
+            
             this.files.set(fileId, {
                 id: fileId,
                 name: file.name,
-                url: URL.createObjectURL(file)
+                url: objectURL
             });
             
             // Add to current folder
@@ -149,6 +292,7 @@ class SoundPlayer {
 
             if (state) {
                 // Clear current state
+                this.cleanupAllObjectURLs();
                 this.folders.clear();
                 this.files.clear();
 
@@ -170,11 +314,13 @@ class SoundPlayer {
 
                     if (fileData) {
                         const blob = new Blob([fileData]);
-                        const url = URL.createObjectURL(blob);
+                        const objectURL = URL.createObjectURL(blob);
+                        this.activeObjectURLs.add(objectURL);
+                        
                         this.files.set(file.id, {
                             id: file.id,
                             name: file.name,
-                            url: url
+                            url: objectURL
                         });
                     }
                 }
@@ -390,6 +536,15 @@ class SoundPlayer {
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
+            // Don't trigger shortcuts when typing in input fields
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                // Only allow escape key to work in input fields
+                if (e.key === 'Escape' && e.target.id === 'searchInput') {
+                    this.clearSearch();
+                }
+                return;
+            }
+
             if (e.ctrlKey && e.key === 's') {
                 e.preventDefault();
                 this.saveToFile();
@@ -401,6 +556,61 @@ class SoundPlayer {
                 const searchInput = document.getElementById('searchInput');
                 if (searchInput) {
                     searchInput.focus();
+                }
+            } else if (e.key === ' ') {
+                e.preventDefault();
+                this.togglePlay();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                this.playNext();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                this.playPrevious();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const volumeSlider = document.getElementById('volumeSlider');
+                if (volumeSlider) {
+                    const newVolume = Math.min(100, parseInt(volumeSlider.value) + 5);
+                    volumeSlider.value = newVolume;
+                    this.setVolume(newVolume);
+                    this.showNotification(`Volume: ${newVolume}%`, 'info', 1000);
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const volumeSlider = document.getElementById('volumeSlider');
+                if (volumeSlider) {
+                    const newVolume = Math.max(0, parseInt(volumeSlider.value) - 5);
+                    volumeSlider.value = newVolume;
+                    this.setVolume(newVolume);
+                    this.showNotification(`Volume: ${newVolume}%`, 'info', 1000);
+                }
+            } else if (e.key === 's' && !e.ctrlKey) {
+                e.preventDefault();
+                this.toggleShuffle();
+            } else if (e.key === 'r' && !e.ctrlKey) {
+                e.preventDefault();
+                this.toggleRepeatOne();
+            } else if (e.key === 'm') {
+                e.preventDefault();
+                const volumeSlider = document.getElementById('volumeSlider');
+                if (volumeSlider) {
+                    if (this.audioElement.volume > 0) {
+                        this.previousVolume = this.audioElement.volume;
+                        this.setVolume(0);
+                        volumeSlider.value = 0;
+                        this.showNotification('Muted', 'info', 1000);
+                    } else {
+                        const restoreVolume = (this.previousVolume || 0.5) * 100;
+                        this.setVolume(restoreVolume);
+                        volumeSlider.value = restoreVolume;
+                        this.showNotification(`Volume: ${restoreVolume}%`, 'info', 1000);
+                    }
+                }
+            } else if (e.key === 'Delete') {
+                e.preventDefault();
+                if (this.selectedFiles.size > 0) {
+                    const fileIds = Array.from(this.selectedFiles);
+                    fileIds.forEach(fileId => this.deleteFile(fileId));
                 }
             }
         });
@@ -684,25 +894,37 @@ class SoundPlayer {
     }
 
     playFile(fileId) {
-        const file = this.files.get(fileId);
-        if (!file) return;
+        try {
+            const file = this.files.get(fileId);
+            if (!file) {
+                this.showNotification('File not found', 'error');
+                return;
+            }
 
-        this.currentTrack = fileId;
-        this.audioElement.src = file.url;
-        document.getElementById('currentTrack').textContent = file.name;
-        
-        // Update selection to match the currently playing track
-        this.selectedFiles.clear();
-        this.selectedFiles.add(fileId);
-        this.lastSelectedFile = fileId;
-        
-        this.play();
-        this.updateFilesList(); // Update to show which file is playing
-        
-        // Auto-scroll to the current track if enabled
-        if (this.isAutoScrollOn) {
-            // Use setTimeout to ensure the file list is updated first
-            setTimeout(() => this.scrollToCurrentTrack(), 100);
+            if (!file.url) {
+                this.showNotification('File URL is invalid', 'error');
+                return;
+            }
+
+            this.currentTrack = fileId;
+            this.audioElement.src = file.url;
+            document.getElementById('currentTrack').textContent = file.name;
+            
+            // Update selection to match the currently playing track
+            this.selectedFiles.clear();
+            this.selectedFiles.add(fileId);
+            this.lastSelectedFile = fileId;
+            
+            this.play();
+            this.updateFilesList(); // Update to show which file is playing
+            
+            // Auto-scroll to the current track if enabled
+            if (this.isAutoScrollOn) {
+                // Use setTimeout to ensure the file list is updated first
+                setTimeout(() => this.scrollToCurrentTrack(), 100);
+            }
+        } catch (error) {
+            this.showNotification(`Failed to play file: ${error.message}`, 'error');
         }
     }
 
@@ -729,6 +951,7 @@ class SoundPlayer {
             })
             .catch(error => {
                 console.error('Error playing audio:', error);
+                this.showNotification(`Playback failed: ${error.message}`, 'error');
                 this.isPlaying = false;
                 document.getElementById('playBtn').innerHTML = '<span class="material-icons">play_arrow</span>';
             });
@@ -770,11 +993,20 @@ class SoundPlayer {
     }
 
     seek(value) {
-        if (!this.audioElement.duration || isNaN(this.audioElement.duration)) {
-            return; // Can't seek if no audio is loaded or duration is invalid
+        try {
+            if (!this.audioElement.duration || isNaN(this.audioElement.duration)) {
+                this.showNotification('Cannot seek: no audio loaded', 'error');
+                return;
+            }
+            const time = (value * this.audioElement.duration) / 100;
+            if (time < 0 || time > this.audioElement.duration) {
+                this.showNotification('Invalid seek position', 'error');
+                return;
+            }
+            this.audioElement.currentTime = time;
+        } catch (error) {
+            this.showNotification(`Seek failed: ${error.message}`, 'error');
         }
-        const time = (value * this.audioElement.duration) / 100;
-        this.audioElement.currentTime = time;
     }
 
     updateProgress() {
@@ -1062,6 +1294,11 @@ class SoundPlayer {
                 folder.files.delete(fileId);
             });
 
+            // Cleanup blob URL to prevent memory leak
+            if (file.url) {
+                this.cleanupObjectURL(file.url);
+            }
+
             // Remove from files map
             this.files.delete(fileId);
 
@@ -1285,6 +1522,7 @@ class SoundPlayer {
             const metadata = JSON.parse(metadataJson);
 
             // Clear current state
+            this.cleanupAllObjectURLs();
             this.folders.clear();
             this.files.clear();
             await this.clearDatabase();
@@ -1396,28 +1634,42 @@ class SoundPlayer {
     }
 
     async clearAll() {
-        // Stop playback
-        if (this.isPlaying) {
-            this.pause();
-        }
-        this.currentTrack = null;
-        document.getElementById('currentTrack').textContent = 'No track selected';
-
-        // Clear memory
-        this.files.clear();
-        this.folders.clear();
-        this.selectedFiles.clear();
-
-        // Clear IndexedDB
-        await this.clearDatabase();
-
-        // Reset to default state
-        this.createDefaultFolder();
-        this.currentFolder = 'all';
+        const loadingDialog = this.showSimpleLoading('Clearing all data...');
         
-        // Update UI
-        this.updateFoldersList();
-        this.updateFilesList();
+        try {
+            // Stop playback
+            if (this.isPlaying) {
+                this.pause();
+            }
+            this.currentTrack = null;
+            document.getElementById('currentTrack').textContent = 'No track selected';
+
+            // Clear memory and cleanup blob URLs
+            this.cleanupAllObjectURLs();
+            this.files.clear();
+            this.folders.clear();
+            this.selectedFiles.clear();
+
+            // Clear IndexedDB
+            await this.clearDatabase();
+
+            // Reset to default state
+            this.createDefaultFolder();
+            this.currentFolder = 'all';
+            
+            // Update UI
+            this.updateFoldersList();
+            this.updateFilesList();
+            
+            this.showNotification('All data cleared successfully', 'success');
+        } catch (error) {
+            this.showNotification(`Failed to clear data: ${error.message}`, 'error');
+        } finally {
+            // Close loading dialog
+            if (document.body.contains(loadingDialog)) {
+                document.body.removeChild(loadingDialog);
+            }
+        }
     }
 }
 

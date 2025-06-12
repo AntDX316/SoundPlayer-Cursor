@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm outdated)",
+      "Bash(npm audit:*)",
+      "Bash(npm update:*)",
+      "Bash(npm install)",
+      "Bash(rg:*)",
+      "Bash(grep:*)",
+      "Bash(npm start:*)",
+      "Bash(ls:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": []
+  }
+}
