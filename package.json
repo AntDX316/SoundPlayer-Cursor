@@ -59,7 +59,7 @@
     "electron"
   ],
   "author": "",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "jszip": "^3.10.1",
     "ffmpeg-static": "^5.2.0"
